@@ -1,0 +1,155 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { GearStatusBadge, RentalStatusBadge } from "@/components/StatusBadge";
+import { ApproveGearButtons, RentalActions } from "@/components/AdminActions";
+import { loadDb } from "@/lib/storage";
+import { getEnv } from "@/lib/env";
+import { getDashboardMetrics } from "@/lib/metrics";
+import { getGearList, getRentals } from "@/lib/repo";
+import { formatCurrency, formatDate } from "@/lib/logic";
+
+const db = await loadDb(getEnv(Astro.locals));
+const metrics = getDashboardMetrics(db);
+const allGear = getGearList(db, { includeNonPublic: true });
+const pending = allGear.filter((g) => g.status === "pending");
+const inventory = allGear.filter((g) => g.status !== "pending");
+const rentals = getRentals(db);
+
+const kpis = [
+  { label: "Service revenue", value: formatCurrency(metrics.serviceRevenue), hint: "Business cut (active + completed)", accent: true },
+  { label: "Owner payouts", value: formatCurrency(metrics.ownerPayouts), hint: "Owed to lenders", accent: false },
+  { label: "Active rentals", value: String(metrics.activeRentals), hint: `${metrics.reservedRentals} reserved, ${metrics.completedRentals} completed`, accent: false },
+  { label: "Items in stock", value: String(metrics.itemsAvailable), hint: `${metrics.itemsRented} out, ${metrics.itemsMaintenance} in maintenance`, accent: false },
+];
+---
+
+<Layout title="Business dashboard — RentGear">
+  <div class="container-page py-10">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-pine-900">Business dashboard</h1>
+        <p class="mt-1 text-pine-700/70">Inventory, rentals, and payouts across all hubs.</p>
+      </div>
+      <a href="/lend" class="btn-secondary">+ Add gear</a>
+    </div>
+
+    <!-- KPIs -->
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {kpis.map((k) => (
+        <div class:list={["card p-5", k.accent && "bg-pine-600 text-white"]}>
+          <p class:list={["text-xs uppercase tracking-wide", k.accent ? "text-sand-100/80" : "text-pine-500"]}>{k.label}</p>
+          <p class:list={["mt-1 text-2xl font-bold", k.accent ? "text-white" : "text-pine-900"]}>{k.value}</p>
+          <p class:list={["mt-1 text-xs", k.accent ? "text-sand-100/70" : "text-pine-500"]}>{k.hint}</p>
+        </div>
+      ))}
+    </div>
+
+    <!-- Pending submissions -->
+    <section class="mt-12">
+      <h2 class="text-xl font-bold text-pine-900">
+        Pending submissions
+        {pending.length > 0 && <span class="ml-2 badge bg-amber-100 text-amber-800">{pending.length}</span>}
+      </h2>
+      {pending.length === 0 ? (
+        <p class="mt-3 text-sm text-pine-700/60">No gear awaiting review. 🎉</p>
+      ) : (
+        <div class="mt-4 space-y-3">
+          {pending.map((g) => (
+            <div class="card flex flex-wrap items-center justify-between gap-4 p-4">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl" aria-hidden="true">{g.emoji}</span>
+                <div>
+                  <p class="font-semibold text-pine-900">{g.name}</p>
+                  <p class="text-sm text-pine-700/70">
+                    {g.category?.name} · {formatCurrency(g.dailyPrice)}/day · from {g.owner?.name ?? "unknown"} · {g.hub?.name}
+                  </p>
+                </div>
+              </div>
+              <ApproveGearButtons client:load gearId={g.id} />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+
+    <!-- Rentals -->
+    <section class="mt-12">
+      <h2 class="text-xl font-bold text-pine-900">Rentals</h2>
+      <div class="card mt-4 overflow-x-auto">
+        <table class="w-full min-w-[720px] text-left text-sm">
+          <thead class="border-b border-pine-100 text-xs uppercase tracking-wide text-pine-500">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Gear</th>
+              <th class="px-4 py-3 font-semibold">Renter</th>
+              <th class="px-4 py-3 font-semibold">Dates</th>
+              <th class="px-4 py-3 font-semibold">Hubs</th>
+              <th class="px-4 py-3 font-semibold">Total</th>
+              <th class="px-4 py-3 font-semibold">Status</th>
+              <th class="px-4 py-3 font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rentals.length === 0 && (
+              <tr><td colspan="7" class="p-6 text-center text-pine-700/60">No rentals yet.</td></tr>
+            )}
+            {rentals.map((r) => (
+              <tr class="border-b border-pine-50 last:border-0">
+                <td class="px-4 py-3 text-pine-800"><span class="mr-1" aria-hidden="true">{r.gear?.emoji}</span>{r.gear?.name ?? "—"}</td>
+                <td class="px-4 py-3 text-pine-800">{r.renter?.name ?? "—"}</td>
+                <td class="whitespace-nowrap px-4 py-3 text-pine-800">
+                  {formatDate(r.startDate)} – {formatDate(r.endDate)}
+                  <span class="block text-xs text-pine-500">{r.days} day{r.days === 1 ? "" : "s"}</span>
+                </td>
+                <td class="px-4 py-3 text-xs text-pine-800">
+                  {r.pickupHub?.name}
+                  {r.pickupHubId !== r.dropoffHubId && <> → {r.dropoffHub?.name}</>}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-pine-800">
+                  {formatCurrency(r.total)}
+                  <span class="block text-xs text-pine-500">payout {formatCurrency(r.ownerPayout)}</span>
+                </td>
+                <td class="px-4 py-3"><RentalStatusBadge status={r.status} /></td>
+                <td class="px-4 py-3"><RentalActions client:load rentalId={r.id} status={r.status} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Inventory -->
+    <section class="mt-12">
+      <h2 class="text-xl font-bold text-pine-900">Inventory</h2>
+      <div class="card mt-4 overflow-x-auto">
+        <table class="w-full min-w-[640px] text-left text-sm">
+          <thead class="border-b border-pine-100 text-xs uppercase tracking-wide text-pine-500">
+            <tr>
+              <th class="px-4 py-3 font-semibold">Item</th>
+              <th class="px-4 py-3 font-semibold">Category</th>
+              <th class="px-4 py-3 font-semibold">Owner</th>
+              <th class="px-4 py-3 font-semibold">Hub</th>
+              <th class="px-4 py-3 font-semibold">Price</th>
+              <th class="px-4 py-3 font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {inventory.map((g) => (
+              <tr class="border-b border-pine-50 last:border-0">
+                <td class="px-4 py-3">
+                  <a href={`/gear/${g.id}`} class="font-medium text-pine-800 hover:text-pine-600">
+                    <span class="mr-1" aria-hidden="true">{g.emoji}</span>{g.name}
+                  </a>
+                </td>
+                <td class="px-4 py-3 text-pine-800">{g.category?.name}</td>
+                <td class="px-4 py-3 text-pine-800">{g.owner?.name ?? "—"}</td>
+                <td class="px-4 py-3 text-pine-800">{g.hub?.name ?? "—"}</td>
+                <td class="px-4 py-3 text-pine-800">{formatCurrency(g.dailyPrice)}/day</td>
+                <td class="px-4 py-3"><GearStatusBadge status={g.status} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</Layout>

@@ -1,0 +1,89 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import GearCard from "@/components/GearCard.astro";
+import { loadDb } from "@/lib/storage";
+import { getEnv } from "@/lib/env";
+import { getCategories, getGearList, getHubs } from "@/lib/repo";
+
+const url = Astro.url;
+const category = url.searchParams.get("category") ?? "";
+const hub = url.searchParams.get("hub") ?? "";
+const q = url.searchParams.get("q") ?? "";
+
+const db = await loadDb(getEnv(Astro.locals));
+const categories = getCategories(db);
+const hubs = getHubs(db);
+const gear = getGearList(db, {
+  categorySlug: category || undefined,
+  hubId: hub || undefined,
+  search: q || undefined,
+});
+---
+
+<Layout title="Browse gear — RentGear">
+  <div class="container-page py-10">
+    <div class="flex flex-col gap-2">
+      <h1 class="text-3xl font-bold text-pine-900">Browse gear</h1>
+      <p class="text-pine-700/70">
+        {gear.length} item{gear.length === 1 ? "" : "s"} ready to rent across our hubs.
+      </p>
+    </div>
+
+    <!-- Category chips -->
+    <div class="mt-6 flex flex-wrap gap-2">
+      <a
+        href="/gear"
+        class:list={[
+          "rounded-full border px-4 py-1.5 text-sm font-medium transition",
+          category === "" ? "border-pine-600 bg-pine-600 text-white" : "border-pine-200 bg-white text-pine-700 hover:border-pine-400",
+        ]}
+      >
+        All
+      </a>
+      {categories.map((c) => (
+        <a
+          href={`/gear?category=${c.slug}`}
+          class:list={[
+            "rounded-full border px-4 py-1.5 text-sm font-medium transition",
+            category === c.slug ? "border-pine-600 bg-pine-600 text-white" : "border-pine-200 bg-white text-pine-700 hover:border-pine-400",
+          ]}
+        >
+          {c.emoji} {c.name}
+        </a>
+      ))}
+    </div>
+
+    <!-- Search + hub filter -->
+    <form class="mt-6 grid gap-3 sm:grid-cols-[1fr,auto,auto] sm:items-end" method="get">
+      {category && <input type="hidden" name="category" value={category} />}
+      <div>
+        <label for="q" class="field-label">Search</label>
+        <input id="q" name="q" value={q} placeholder="Tent, kayak, brand…" class="field-input" />
+      </div>
+      <div>
+        <label for="hub" class="field-label">Hub</label>
+        <select id="hub" name="hub" class="field-input sm:w-52">
+          <option value="" selected={hub === ""}>Any hub</option>
+          {hubs.map((h) => (
+            <option value={h.id} selected={hub === h.id}>{h.name}</option>
+          ))}
+        </select>
+      </div>
+      <button type="submit" class="btn-primary">Apply</button>
+    </form>
+
+    <!-- Results -->
+    {gear.length === 0 ? (
+      <div class="card mt-10 flex flex-col items-center justify-center gap-3 p-12 text-center">
+        <span class="text-4xl" aria-hidden="true">🧭</span>
+        <p class="text-lg font-semibold text-pine-900">No gear matches those filters</p>
+        <p class="text-sm text-pine-700/70">Try a different category or clear your search.</p>
+        <a href="/gear" class="btn-secondary mt-2">Reset filters</a>
+      </div>
+    ) : (
+      <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {gear.map((g) => <GearCard gear={g} />)}
+      </div>
+    )}
+  </div>
+</Layout>

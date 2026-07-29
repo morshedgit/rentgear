@@ -1,0 +1,38 @@
+---
+const nav = [
+  { href: "/gear", label: "Browse gear" },
+  { href: "/hubs", label: "Hubs" },
+  { href: "/lend", label: "Lend your gear" },
+  { href: "/dashboard", label: "Business dashboard" },
+];
+---
+
+<header class="sticky top-0 z-30 border-b border-pine-100 bg-sand-50/90 backdrop-blur">
+  <div class="container-page flex h-16 items-center justify-between gap-4">
+    <a href="/" class="flex items-center gap-2 text-lg font-extrabold tracking-tight text-pine-800">
+      <span class="text-2xl" aria-hidden="true">🏔️</span>
+      RentGear
+    </a>
+    <nav class="hidden items-center gap-1 md:flex">
+      {nav.map((item) => (
+        <a
+          href={item.href}
+          class="rounded-lg px-3 py-2 text-sm font-medium text-pine-700 transition hover:bg-pine-50 hover:text-pine-900"
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+    <a href="/gear" class="btn-primary hidden sm:inline-flex">Find gear</a>
+  </div>
+  <nav class="container-page flex gap-1 overflow-x-auto pb-2 md:hidden">
+    {nav.map((item) => (
+      <a
+        href={item.href}
+        class="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-pine-700 hover:bg-pine-50"
+      >
+        {item.label}
+      </a>
+    ))}
+  </nav>
+</header>

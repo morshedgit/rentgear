@@ -1,0 +1,106 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { BookingForm } from "@/components/BookingForm";
+import { GearStatusBadge } from "@/components/StatusBadge";
+import { loadDb } from "@/lib/storage";
+import { getEnv } from "@/lib/env";
+import { getGear, getHubs, getRentalsForGear, getUsers } from "@/lib/repo";
+import { formatCurrency } from "@/lib/logic";
+import { SERVICE_FEE_RATE } from "@/lib/types";
+
+const { id } = Astro.params;
+const db = await loadDb(getEnv(Astro.locals));
+const gear = id ? getGear(db, id) : null;
+
+if (!gear) {
+  return Astro.redirect("/404");
+}
+
+const hubs = getHubs(db);
+const renters = getUsers(db).filter((u) => u.role === "renter");
+const busy = getRentalsForGear(db, gear.id)
+  .filter((r) => r.status === "reserved" || r.status === "active")
+  .map((r) => ({ startDate: r.startDate, endDate: r.endDate }));
+
+const bookable = gear.status === "available" || gear.status === "rented";
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const ownerFirst = gear.owner?.name?.split(" ")[0] ?? "the owner";
+
+const specs = [
+  { label: "Condition", value: cap(gear.condition) },
+  { label: "Daily price", value: `${formatCurrency(gear.dailyPrice)}/day` },
+  { label: "Deposit", value: formatCurrency(gear.depositAmount) },
+  { label: "Home hub", value: gear.hub?.name ?? "—" },
+  { label: "Replacement value", value: formatCurrency(gear.replacementValue) },
+  { label: "Consigned by", value: gear.owner?.name ?? "A community lender" },
+];
+---
+
+<Layout title={`${gear.name} — RentGear`} description={gear.description}>
+  <div class="container-page py-10">
+    <a href="/gear" class="text-sm font-medium text-pine-600 hover:text-pine-800">← Back to catalog</a>
+
+    <div class="mt-4 grid gap-10 lg:grid-cols-[1.4fr,1fr]">
+      <!-- Left: details -->
+      <div>
+        <div class="card flex h-64 items-center justify-center bg-gradient-to-br from-pine-100 to-sand-100 text-8xl">
+          <span aria-hidden="true">{gear.emoji}</span>
+        </div>
+
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-pine-500">{gear.category?.name}</span>
+          <GearStatusBadge status={gear.status} />
+        </div>
+        <h1 class="mt-2 text-3xl font-bold text-pine-900">{gear.name}</h1>
+        <p class="mt-1 text-pine-600">by {gear.brand}</p>
+
+        <p class="mt-6 leading-relaxed text-pine-800">{gear.description}</p>
+
+        <dl class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          {specs.map((s) => (
+            <div class="rounded-xl border border-pine-100 bg-white p-3">
+              <dt class="text-xs uppercase tracking-wide text-pine-500">{s.label}</dt>
+              <dd class="mt-1 font-semibold text-pine-900">{s.value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <div class="card mt-8 flex items-start gap-4 bg-pine-50 p-5">
+          <span class="text-2xl" aria-hidden="true">🤝</span>
+          <div>
+            <p class="font-semibold text-pine-900">Community-owned, business-maintained</p>
+            <p class="mt-1 text-sm text-pine-700/80">
+              This gear was consigned by {gear.owner?.name ?? "a local lender"}. We inspect and clean it
+              between every rental, and {ownerFirst} earns {Math.round((1 - SERVICE_FEE_RATE) * 100)}% of each rental.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: booking -->
+      <div class="lg:sticky lg:top-24 lg:self-start">
+        {bookable ? (
+          <BookingForm
+            client:load
+            gearId={gear.id}
+            dailyPrice={gear.dailyPrice}
+            depositAmount={gear.depositAmount}
+            serviceFeeRate={SERVICE_FEE_RATE}
+            hubs={hubs.map((h) => ({ id: h.id, name: h.name, city: h.city }))}
+            defaultHubId={gear.hubId ?? hubs[0]?.id ?? ""}
+            renters={renters.map((r) => ({ id: r.id, name: r.name }))}
+            busy={busy}
+          />
+        ) : (
+          <div class="card p-6">
+            <p class="font-semibold text-pine-900">Not available for rent</p>
+            <p class="mt-2 text-sm text-pine-700/70">
+              This item is currently {gear.status}. Check back soon or browse similar gear.
+            </p>
+            <a href={`/gear?category=${gear.category?.slug ?? ""}`} class="btn-secondary mt-4 w-full">See similar gear</a>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</Layout>

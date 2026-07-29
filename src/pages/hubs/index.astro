@@ -1,0 +1,61 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { loadDb } from "@/lib/storage";
+import { getEnv } from "@/lib/env";
+import { getGearList, getHubs } from "@/lib/repo";
+
+const db = await loadDb(getEnv(Astro.locals));
+const hubs = getHubs(db);
+const gear = getGearList(db);
+---
+
+<Layout title="Our hubs — RentGear">
+  <div class="container-page py-10">
+    <h1 class="text-3xl font-bold text-pine-900">Our hubs</h1>
+    <p class="mt-2 max-w-2xl text-pine-700/70">
+      Every rental is picked up and dropped off at a hub. Drop gear at one and grab it from another — we keep
+      the inventory moving so it&apos;s ready where you need it.
+    </p>
+
+    <div class="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {hubs.map((hub) => {
+        const count = gear.filter((g) => g.hubId === hub.id).length;
+        const mapsQuery = encodeURIComponent(`${hub.address}, ${hub.city}, ${hub.region}`);
+        return (
+          <div class="card flex flex-col p-6">
+            <div class="flex items-start justify-between">
+              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-pine-100 text-2xl" aria-hidden="true">📍</div>
+              <span class="badge bg-pine-100 text-pine-700">{count} item{count === 1 ? "" : "s"}</span>
+            </div>
+            <h2 class="mt-4 text-xl font-semibold text-pine-900">{hub.name}</h2>
+            <p class="mt-1 text-sm text-pine-700/80">
+              {hub.address}<br />
+              {hub.city}, {hub.region}
+            </p>
+            <dl class="mt-4 space-y-1 text-sm text-pine-700/80">
+              <div class="flex gap-2">
+                <dt class="font-medium text-pine-900">Hours:</dt>
+                <dd>{hub.hours}</dd>
+              </div>
+              <div class="flex gap-2">
+                <dt class="font-medium text-pine-900">Phone:</dt>
+                <dd>{hub.phone}</dd>
+              </div>
+            </dl>
+            <div class="mt-auto flex gap-2 pt-6">
+              <a href={`/gear?hub=${hub.id}`} class="btn-secondary flex-1">Gear here</a>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn-primary flex-1"
+              >
+                Directions
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</Layout>

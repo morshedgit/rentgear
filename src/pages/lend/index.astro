@@ -1,0 +1,62 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { LendForm } from "@/components/LendForm";
+import { loadDb } from "@/lib/storage";
+import { getEnv } from "@/lib/env";
+import { getCategories, getHubs } from "@/lib/repo";
+import { SERVICE_FEE_RATE } from "@/lib/types";
+
+const db = await loadDb(getEnv(Astro.locals));
+const categories = getCategories(db);
+const hubs = getHubs(db);
+const payoutPct = Math.round((1 - SERVICE_FEE_RATE) * 100);
+
+const perks = [
+  { emoji: "🧰", title: "We do the work", body: "Storage, cleaning, inspection, and handoffs happen at the hub." },
+  { emoji: "🛡️", title: "Deposits protect your gear", body: "Every renter leaves a refundable deposit sized to your gear's value." },
+  { emoji: "📈", title: "Passive payouts", body: `Keep ${payoutPct}% of each rental. Withdraw your balance anytime.` },
+  { emoji: "↩️", title: "Take it back anytime", body: "Want your gear for a trip? Reclaim it once its current rental ends." },
+];
+---
+
+<Layout title="Lend your gear — RentGear">
+  <div class="container-page py-10">
+    <div class="grid gap-10 lg:grid-cols-[1fr,1.1fr] lg:items-start">
+      <!-- Left: pitch -->
+      <div class="lg:sticky lg:top-24">
+        <span class="badge bg-pine-100 text-pine-700">Earn from idle gear</span>
+        <h1 class="mt-3 text-3xl font-bold text-pine-900">Lend your gear, earn on every rental</h1>
+        <p class="mt-3 text-pine-700/80">
+          Consign the gear you aren&apos;t using. We inspect it, store it at a hub, clean it between rentals, and
+          handle the renters. You earn {payoutPct}% of every rental — hands-off.
+        </p>
+
+        <ul class="mt-6 space-y-4">
+          {perks.map((p) => (
+            <li class="flex gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sand-100 text-xl" aria-hidden="true">{p.emoji}</span>
+              <div>
+                <p class="font-semibold text-pine-900">{p.title}</p>
+                <p class="text-sm text-pine-700/70">{p.body}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Right: form -->
+      <div class="card p-6 sm:p-8">
+        <h2 class="text-xl font-bold text-pine-900">Consign a piece of gear</h2>
+        <p class="mt-1 text-sm text-pine-700/70">
+          Tell us about it and pick a drop-off hub. Our ops team reviews every submission before it goes live.
+        </p>
+        <LendForm
+          client:load
+          categories={categories}
+          hubs={hubs.map((h) => ({ id: h.id, name: h.name }))}
+          serviceFeeRate={SERVICE_FEE_RATE}
+        />
+      </div>
+    </div>
+  </div>
+</Layout>

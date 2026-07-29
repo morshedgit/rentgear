@@ -1,0 +1,125 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import GearCard from "@/components/GearCard.astro";
+import { loadDb } from "@/lib/storage";
+import { getEnv } from "@/lib/env";
+import { getCategories, getGearList, getHubs } from "@/lib/repo";
+
+const db = await loadDb(getEnv(Astro.locals));
+const categories = getCategories(db);
+const hubs = getHubs(db);
+const allGear = getGearList(db);
+const featured = allGear.slice(0, 4);
+---
+
+<Layout>
+  <!-- Hero -->
+  <section class="relative overflow-hidden bg-pine-950 text-white">
+    <div class="absolute inset-0 opacity-20" aria-hidden="true">
+      <div class="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-pine-500 blur-3xl"></div>
+      <div class="absolute bottom-0 left-10 h-64 w-64 rounded-full bg-ember-500 blur-3xl"></div>
+    </div>
+    <div class="container-page relative grid gap-10 py-20 lg:grid-cols-2 lg:items-center">
+      <div>
+        <span class="badge bg-pine-800 text-pine-100">Community-powered gear rental</span>
+        <h1 class="mt-4 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+          Great outdoor gear, without the closet full of it.
+        </h1>
+        <p class="mt-4 max-w-xl text-lg text-sand-100/80">
+          Neighbors lend the kit they aren&apos;t using. We store it, clean it, and keep it trip-ready at a
+          hub near you. You rent it for a weekend, an expedition, or a first try.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="/gear" class="btn-ember">Browse the catalog</a>
+          <a href="/lend" class="btn-secondary">Lend your gear →</a>
+        </div>
+        <dl class="mt-10 grid max-w-md grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-2xl font-bold text-white">{allGear.length}+</div>
+            <div class="text-xs uppercase tracking-wide text-sand-200/70">Items ready</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-white">{hubs.length}</div>
+            <div class="text-xs uppercase tracking-wide text-sand-200/70">Pickup hubs</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-white">25%</div>
+            <div class="text-xs uppercase tracking-wide text-sand-200/70">Service fee</div>
+          </div>
+        </dl>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        {categories.slice(0, 4).map((c) => (
+          <a
+            href={`/gear?category=${c.slug}`}
+            class="rounded-2xl border border-pine-800 bg-pine-900/60 p-5 transition hover:border-pine-500 hover:bg-pine-900"
+          >
+            <div class="text-4xl" aria-hidden="true">{c.emoji}</div>
+            <div class="mt-3 font-semibold">{c.name}</div>
+            <div class="text-sm text-sand-200/70">{c.blurb}</div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="container-page py-16">
+    <h2 class="text-center text-3xl font-bold text-pine-900">How RentGear works</h2>
+    <p class="mx-auto mt-2 max-w-2xl text-center text-pine-700/70">
+      A rental marketplace with a twist: the gear is owned by the community, but the business handles
+      everything in between.
+    </p>
+    <div class="mt-12 grid gap-6 md:grid-cols-3">
+      {[
+        { step: "1", emoji: "📦", title: "Owners consign gear", body: "Have a tent, kayak, or bike gathering dust? Drop it at a hub. We inspect it and list it for rent." },
+        { step: "2", emoji: "🏠", title: "We store & maintain it", body: "Gear lives at our hubs, cleaned and checked between every rental so it's always trip-ready." },
+        { step: "3", emoji: "💸", title: "Everyone earns", body: "Renters pick up nearby and go. Owners earn a payout on every rental. The business takes a small fee." },
+      ].map((s) => (
+        <div class="card p-6">
+          <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-pine-100 text-xl" aria-hidden="true">{s.emoji}</span>
+            <span class="text-sm font-bold text-pine-400">Step {s.step}</span>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold text-pine-900">{s.title}</h3>
+          <p class="mt-1 text-sm text-pine-700/70">{s.body}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Featured gear -->
+  <section class="container-page py-8">
+    <div class="flex items-end justify-between">
+      <h2 class="text-2xl font-bold text-pine-900">Ready to rent now</h2>
+      <a href="/gear" class="text-sm font-semibold text-pine-600 hover:text-pine-800">View all gear →</a>
+    </div>
+    <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {featured.map((g) => <GearCard gear={g} />)}
+    </div>
+  </section>
+
+  <!-- Hubs teaser -->
+  <section class="container-page py-16">
+    <div class="card overflow-hidden bg-gradient-to-br from-pine-600 to-pine-800 p-8 text-white sm:p-12">
+      <div class="grid gap-6 lg:grid-cols-[1.5fr,1fr] lg:items-center">
+        <div>
+          <h2 class="text-2xl font-bold sm:text-3xl">Pick up and drop off at a hub</h2>
+          <p class="mt-3 max-w-xl text-sand-100/85">
+            No shipping, no waiting. Grab your gear at the hub closest to your trailhead and return it to any
+            hub when you&apos;re done.
+          </p>
+          <a href="/hubs" class="btn-ember mt-6">See all hubs →</a>
+        </div>
+        <ul class="space-y-3">
+          {hubs.map((h) => (
+            <li class="flex items-center justify-between rounded-xl bg-white/10 px-4 py-3">
+              <span class="font-semibold">{h.name}</span>
+              <span class="text-sm text-sand-100/80">{h.city}, {h.region}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+</Layout>

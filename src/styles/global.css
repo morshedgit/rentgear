@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  @apply bg-sand-50 text-pine-950 antialiased;
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-pine-600 text-white hover:bg-pine-700 focus:ring-pine-500;
+  }
+  .btn-secondary {
+    @apply btn border border-pine-200 bg-white text-pine-700 hover:bg-pine-50 focus:ring-pine-400;
+  }
+  .btn-ember {
+    @apply btn bg-ember-500 text-white hover:bg-ember-600 focus:ring-ember-500;
+  }
+
+  .card {
+    @apply rounded-2xl border border-pine-100 bg-white shadow-sm;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .field-label {
+    @apply mb-1 block text-sm font-medium text-pine-800;
+  }
+  .field-input {
+    @apply w-full rounded-lg border border-pine-200 bg-white px-3 py-2 text-sm text-pine-950 shadow-sm focus:border-pine-500 focus:outline-none focus:ring-1 focus:ring-pine-500;
+  }
+}

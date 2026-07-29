@@ -1,0 +1,43 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-20 border-t border-pine-100 bg-pine-950 text-sand-100">
+  <div class="container-page grid gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4">
+    <div>
+      <div class="flex items-center gap-2 text-lg font-extrabold text-white">
+        <span aria-hidden="true">🏔️</span> RentGear
+      </div>
+      <p class="mt-3 max-w-xs text-sm text-sand-200/80">
+        Community-owned outdoor gear, cared for by the business, ready at a hub near you.
+      </p>
+    </div>
+    <div>
+      <h3 class="text-sm font-semibold text-white">Rent</h3>
+      <ul class="mt-3 space-y-2 text-sm text-sand-200/80">
+        <li><a href="/gear" class="hover:text-white">Browse gear</a></li>
+        <li><a href="/hubs" class="hover:text-white">Find a hub</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-sm font-semibold text-white">Lend</h3>
+      <ul class="mt-3 space-y-2 text-sm text-sand-200/80">
+        <li><a href="/lend" class="hover:text-white">Lend your gear</a></li>
+        <li><a href="/dashboard" class="hover:text-white">Business dashboard</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-sm font-semibold text-white">How it works</h3>
+      <p class="mt-3 text-sm text-sand-200/80">
+        Owners consign gear, the business stores and rents it, and everyone earns from kit that would
+        otherwise gather dust.
+      </p>
+    </div>
+  </div>
+  <div class="border-t border-pine-800/60">
+    <div class="container-page flex flex-col items-center justify-between gap-2 py-4 text-xs text-sand-200/60 sm:flex-row">
+      <span>© {year} RentGear. Demo marketplace.</span>
+      <span>Boulder · Denver · Fort Collins</span>
+    </div>
+  </div>
+</footer>
