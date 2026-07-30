@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/write-assetsignore.mjs",
     "preview": "astro preview",
     "deploy": "astro build && wrangler deploy",
     "astro": "astro"
@@ -24,6 +24,6 @@
   "devDependencies": {
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
-    "wrangler": "3.107.3"
+    "wrangler": "^4.116.0"
   }
 }
