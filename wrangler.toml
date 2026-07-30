@@ -17,3 +17,11 @@ directory = "./dist"
 [[kv_namespaces]]
 binding = "GEAR_KV"
 id = "8bdecc666c3943f78202173951a36b75"
+
+# R2 bucket for uploaded gear photos. Create the bucket once, then set its name:
+#   npx wrangler r2 bucket create rentgear-images
+# (The binding name GEAR_BUCKET is what the app code looks for; the bucket_name
+# must match the real bucket in your account.)
+[[r2_buckets]]
+binding = "GEAR_BUCKET"
+bucket_name = "rentgear-images"

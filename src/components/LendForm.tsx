@@ -24,9 +24,28 @@ export function LendForm({ categories, hubs, serviceFeeRate }: Props) {
   });
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function selectPhoto(file: File | null) {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhoto(file);
+    setPhotoPreview(file ? URL.createObjectURL(file) : null);
+  }
+
+  // Upload the chosen photo to R2 and return its object key, or null if none.
+  async function uploadPhoto(): Promise<string | null> {
+    if (!photo) return null;
+    const body = new FormData();
+    body.append("file", photo);
+    const res = await fetch("/api/upload", { method: "POST", body });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Photo upload failed.");
+    return data.key as string;
   }
 
   // Show the lender what they'd earn on a sample week-long rental.
@@ -43,11 +62,13 @@ export function LendForm({ categories, hubs, serviceFeeRate }: Props) {
     setStatus("submitting");
     setMessage("");
     try {
+      const imageKey = await uploadPhoto();
       const res = await fetch("/api/lend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          imageKey,
           dailyPrice: Number(form.dailyPrice),
           replacementValue: Number(form.replacementValue),
         }),
@@ -59,9 +80,9 @@ export function LendForm({ categories, hubs, serviceFeeRate }: Props) {
         return;
       }
       setStatus("success");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setMessage("Network error. Please try again.");
+      setMessage(err instanceof Error ? err.message : "Network error. Please try again.");
     }
   }
 
@@ -81,6 +102,7 @@ export function LendForm({ categories, hubs, serviceFeeRate }: Props) {
             onClick={() => {
               setStatus("idle");
               setForm((f) => ({ ...f, name: "", brand: "", description: "", dailyPrice: "", replacementValue: "" }));
+              selectPhoto(null);
             }}
           >
             Lend another
@@ -127,6 +149,33 @@ export function LendForm({ categories, hubs, serviceFeeRate }: Props) {
           placeholder="What makes it great, what's included, sizing…"
           required
         />
+      </Field>
+
+      <Field label="Photo">
+        <div className="flex items-center gap-4">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-pine-100 bg-sand-100 text-2xl">
+            {photoPreview ? (
+              <img src={photoPreview} alt="Selected gear photo" className="h-full w-full object-cover" />
+            ) : (
+              <span aria-hidden>📷</span>
+            )}
+          </div>
+          <div className="text-sm">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(e) => selectPhoto(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-pine-700 file:mr-3 file:rounded-lg file:border-0 file:bg-pine-100 file:px-3 file:py-1.5 file:text-pine-800 hover:file:bg-pine-200"
+            />
+            {photo ? (
+              <button type="button" className="mt-1 text-xs text-ember-600 hover:underline" onClick={() => selectPhoto(null)}>
+                Remove photo
+              </button>
+            ) : (
+              <p className="mt-1 text-xs text-pine-500">Optional — JPEG, PNG, WebP or GIF, up to 5 MB.</p>
+            )}
+          </div>
+        </div>
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">

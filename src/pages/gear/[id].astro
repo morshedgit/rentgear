@@ -43,8 +43,12 @@ const specs = [
     <div class="mt-4 grid gap-10 lg:grid-cols-[1.4fr,1fr]">
       <!-- Left: details -->
       <div>
-        <div class="card flex h-64 items-center justify-center bg-gradient-to-br from-pine-100 to-sand-100 text-8xl">
-          <span aria-hidden="true">{gear.emoji}</span>
+        <div class="card flex h-64 items-center justify-center overflow-hidden bg-gradient-to-br from-pine-100 to-sand-100 text-8xl">
+          {gear.imageKey ? (
+            <img src={`/api/images/${gear.imageKey}`} alt={gear.name} class="h-full w-full object-cover" />
+          ) : (
+            <span aria-hidden="true">{gear.emoji}</span>
+          )}
         </div>
 
         <div class="mt-6 flex flex-wrap items-center gap-3">

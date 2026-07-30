@@ -46,6 +46,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const condition = CONDITIONS.includes(body.condition as Condition) ? (body.condition as Condition) : "good";
   const dailyPrice = Number(body.dailyPrice);
   const replacementValue = Number(body.replacementValue);
+  // Optional photo uploaded ahead of time via POST /api/upload.
+  const imageKey = str(body.imageKey) || undefined;
 
   if (!name || !description || !categoryId || !hubId || !ownerName || !ownerEmail) {
     return json({ error: "Please fill in all required fields." }, 400);
@@ -89,6 +91,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         condition,
         brand,
         emoji: category.emoji,
+        imageKey,
         status: "pending",
         createdAt: new Date().toISOString(),
       };
