@@ -9,4 +9,4 @@ pages_build_output_dir = "./dist"
 #   npx wrangler kv namespace create GEAR_KV
 [[kv_namespaces]]
 binding = "GEAR_KV"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "8bdecc666c3943f78202173951a36b75"
