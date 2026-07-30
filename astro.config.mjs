@@ -13,4 +13,15 @@ export default defineConfig({
     platformProxy: { enabled: true },
   }),
   integrations: [react(), tailwind()],
+  vite: {
+    resolve: {
+      // React 19's `react-dom/server` resolves to the `.browser` build by
+      // default, which references `MessageChannel` and crashes at Worker
+      // startup ("MessageChannel is not defined"). Force the edge build,
+      // which is designed for Workers/edge runtimes (and works on Node too).
+      alias: {
+        "react-dom/server": "react-dom/server.edge",
+      },
+    },
+  },
 });
