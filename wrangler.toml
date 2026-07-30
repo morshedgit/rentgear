@@ -1,11 +1,18 @@
 name = "rentgear"
+main = "./dist/_worker.js/index.js"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "./dist"
+
+# Static assets (the built client bundle in ./dist) are served by Cloudflare's
+# asset handler; the Astro Cloudflare adapter reaches them via the ASSETS
+# binding and falls through to SSR for everything else.
+[assets]
+binding = "ASSETS"
+directory = "./dist"
 
 # Key-value store that holds the whole marketplace as a single JSON document.
 # For local `astro dev` this is emulated automatically by the platform proxy.
-# Before deploying, create a real namespace and paste its id here:
+# Create the namespace once, then paste its id here:
 #   npx wrangler kv namespace create GEAR_KV
 [[kv_namespaces]]
 binding = "GEAR_KV"
