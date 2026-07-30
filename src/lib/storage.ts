@@ -1,5 +1,6 @@
 import { seedData } from "./seed";
 import type { Database } from "./types";
+import type { R2Bucket } from "./blob";
 
 // Persistence lives in a single Cloudflare KV entry that holds the whole
 // marketplace as one JSON document. KV is simple to provision ("easier to
@@ -22,6 +23,7 @@ interface KVNamespace {
 
 export interface RuntimeEnv {
   GEAR_KV?: KVNamespace;
+  GEAR_BUCKET?: R2Bucket;
 }
 
 // In-memory fallback (single process, dev only).

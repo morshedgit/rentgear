@@ -16,7 +16,7 @@ npm install
 npm run dev        # astro dev on http://localhost:4321
 npm run build      # astro build (Cloudflare adapter output in ./dist)
 npm run preview    # preview the built worker
-npm run deploy     # astro build && wrangler pages deploy ./dist
+npm run deploy     # astro build && wrangler deploy
 ```
 
 There is no test suite or linter configured. Verify changes by running `npm run build` (catches type
@@ -54,6 +54,10 @@ one JSON document. This layer is deliberately isolated so it could later be swap
   the same formula client-side for the live quote, so keep the two in sync if you change it.
 - `src/lib/seed.ts` — deterministic seed (users, 3 hubs, 6 categories, ~14 gear, 2 rentals).
 - `src/lib/types.ts` — domain model + `SERVICE_FEE_RATE`.
+- `src/lib/blob.ts` — uploaded gear photos live in a **Cloudflare R2 bucket** (`GEAR_BUCKET`), not KV.
+  Same pattern as `storage.ts`: `putBlob`/`getBlob` are async with a module-level in-memory fallback,
+  and `platformProxy` gives `astro dev` an emulated bucket. A `Gear` may carry an optional `imageKey`
+  (the R2 object key); when absent the UI falls back to the category `emoji`.
 
 ### Write endpoints (`src/pages/api/`)
 
@@ -66,9 +70,13 @@ All mutate through `mutateDb(getEnv(locals), (db) => …)` and throw `HttpError(
   `TRANSITIONS` table and **side-effect the gear's status** (→ `rented` on pickup, → `available` on
   return/cancel unless another active rental still holds it).
 - `POST /api/lend` — a lender consigns gear; created as `pending`, deposit auto-sized from replacement
-  value. Reuses/creates a lender user by email.
+  value. Reuses/creates a lender user by email. Accepts an optional `imageKey` (from `/api/upload`).
 - `PATCH /api/gear/[id]` — ops actions: `approve` (pending→available), `reject` (pending→retired),
   `maintenance`, `restock`.
+- `POST /api/upload` — multipart `file` field → validates image type/size (≤5 MB) → stores in R2 →
+  returns `{ key }`. Does **not** touch the KV database. Note: Astro's `checkOrigin` CSRF guard rejects
+  multipart POSTs without a matching `Origin` header (fine from the browser; add the header when curling).
+- `GET /api/images/[key]` — streams an uploaded photo back from R2 with long-lived cache headers.
 
 ### Status models
 
@@ -78,8 +86,16 @@ Rental: `reserved → active → completed`, or `reserved → cancelled`.
 
 ## Deploying to Cloudflare
 
-Create a KV namespace and paste its id into `wrangler.toml` (`GEAR_KV` binding), then `npm run deploy`
-— or connect the repo in Cloudflare Pages (build `npm run build`, output `dist`) and bind `GEAR_KV`.
+The app deploys as a **Cloudflare Worker** (Workers Static Assets), not Pages — Cloudflare's dashboard
+now only offers the unified Workers Git flow. `wrangler.toml` uses a `main` entry + `[assets]` binding
+(not `pages_build_output_dir`). Connect the repo in the Workers dashboard (build `npm run build`,
+deploy `npx wrangler deploy`); bindings (`GEAR_KV`, `GEAR_BUCKET`) come from `wrangler.toml`. Create
+the KV namespace and R2 bucket first and set their id/name in `wrangler.toml`.
+
+The build writes a `dist/.assetsignore` (via `scripts/write-assetsignore.mjs`) so the `_worker.js`
+server bundle isn't uploaded as a public asset. `astro.config.mjs` aliases `react-dom/server` to the
+`.edge` build to avoid a `MessageChannel is not defined` crash at Worker startup.
+
 KV has no transactions, so concurrent writes can race; acceptable for this app, but a production build
 would move to D1 behind the same `storage.ts` interface.
 

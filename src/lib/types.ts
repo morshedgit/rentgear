@@ -57,7 +57,8 @@ export interface Gear {
   replacementValue: number; // used to size the deposit / insurance
   condition: "new" | "excellent" | "good" | "fair";
   brand: string;
-  emoji: string;
+  emoji: string; // fallback visual when no photo has been uploaded
+  imageKey?: string; // R2 object key for an uploaded photo, served at /api/images/<key>
   status: GearStatus;
   createdAt: string;
 }
